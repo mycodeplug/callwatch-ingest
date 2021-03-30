@@ -8,6 +8,9 @@ const util = require("util");
 const cbridge = "pnw-d.pnwdigital.net";
 moment.tz.setDefault("America/Los_Angeles");
 
+const long_sleep = 30000;  // delay when no calls are active
+const short_sleep = 5000;  // delay when seeing active calls
+
 const DB = new Pool();
 
 class Call {
@@ -61,7 +64,7 @@ async function updateData(from_time, loop) {
   if (from_time) {
     query["updateNumber"] = from_time;
   }
-  console.log(`Querying ${url} with ${util.inspect(query)}`);
+  console.log(`[${moment().format()}] Querying ${url} with ${util.inspect(query)}`);
   const resp = await superagent.get(url).query(query);
   const [update_number, active_calls, done_calls] = Call.from_text(resp.text);
   g_active_calls = active_calls;
@@ -101,7 +104,8 @@ async function updateData(from_time, loop) {
     ]).catch((e) => console.error(e.stack));
   }
   if (loop) {
-    setTimeout(() => updateData(from_time, loop), 5000);
+    const sleep_time = (active_calls.length > 0) ? short_sleep : long_sleep;
+    setTimeout(() => updateData(from_time, loop), sleep_time);
   }
 }
 
