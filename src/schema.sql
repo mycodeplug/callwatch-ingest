@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS calls (
     site text NOT NULL,
     rssi text NOT NULL,
     loss_rate text NOT NULL,
-    cbridge text NOT NULL
+    cbridge text NOT NULL,
+    UNIQUE (time, duration, dest_group)
 );
 
 CREATE TABLE IF NOT EXISTS ingest (
