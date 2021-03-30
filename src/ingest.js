@@ -80,7 +80,8 @@ async function updateData(from_time, loop) {
     const insert_query = `INSERT INTO calls (time, duration, source_peer,
                                                  source_radio, dest_group, rssi,
                                                  site, loss_rate, cbridge)
-                              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`;
+                          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                          ON CONFLICT DO NOTHING`;
     done_calls.forEach((item) => {
       DB.query(insert_query, [
         item.time,
