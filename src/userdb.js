@@ -14,9 +14,13 @@ async function download_users_json(url) {
   if (!url) {
     url = default_radioid_users_json;
   }
-  return superagent.get(url).then(res => {
-    return res.body;
-  });
+  return superagent.get(url)
+    .then(res => {
+      return res.body;
+    })
+    .catch(e => {
+      console.error(e.stack)
+    });
 }
 
 const insert_query = `INSERT INTO dmrid_history
@@ -25,16 +29,16 @@ const insert_query = `INSERT INTO dmrid_history
                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                       ON CONFLICT DO NOTHING`;
 
-async function update_records(users_promise) {
+async function update_records(users) {
   const client = await pool.connect();
-  const users = JSON.parse(await users_promise);
   const prog = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+  const user_records = users["users"];
   let done = 0;
   try {
-    console.log("Updating dmrid_history table:")
+    console.log(`Updating dmrid_history table with ${user_records.length} records:`)
     await client.query("BEGIN");
-    prog.start(users["users"].length, 0);
-    for (const user of users["users"]) {
+    prog.start(user_records.length, 0);
+    for (const user of user_records) {
       await client.query(insert_query, [
         user.radio_id,
         user.callsign,
@@ -62,6 +66,6 @@ async function update_records(users_promise) {
 }
 
 (async function () {
-  //await update_records(download_users_json());
-  await update_records(fs.promises.readFile(local_json, 'utf8'));
+  await update_records(await download_users_json());
+  //await update_records(JSON.parse(await fs.promises.readFile(local_json, 'utf-8')));
 })();
