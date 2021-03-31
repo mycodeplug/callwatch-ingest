@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "cli-progress": "^3.9.0",
     "moment-timezone": "^0.5.33",
     "pg": "^8.5.1",
     "redis": "^3.0.2",

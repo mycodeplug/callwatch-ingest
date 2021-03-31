@@ -1,4 +1,5 @@
 // userdb.js - get data from radioid into dmrid_history table
+const cliProgress = require('cli-progress');
 const { Pool } = require("pg");
 const superagent = require("superagent");
 const fs = require('fs')
@@ -27,24 +28,31 @@ const insert_query = `INSERT INTO dmrid_history
 async function update_records(users_promise) {
   const client = await pool.connect();
   const users = JSON.parse(await users_promise);
+  const prog = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
   let done = 0;
   try {
+    console.log("Updating dmrid_history table:")
     await client.query("BEGIN");
+    prog.start(users["users"].length, 0);
     for (const user of users["users"]) {
       await client.query(insert_query, [
         user.radio_id,
         user.callsign,
-        user.name,
-        user.surname,
-        user.city,
-        user.state,
-        user.country,
-        user.remarks,
+        user.name ? user.name : null,
+        user.surname ? user.surname : null,
+        user.city ? user.city : null,
+        user.state ? user.state : null,
+        user.country ? user.country : null,
+        user.remarks ? user.remarks : null,
       ]);
       done++;
+      prog.update(done);
     }
+    prog.stop();
+    console.log("Committing transaction...stand by")
     await client.query("COMMIT");
   } catch (e) {
+    prog.stop();
     await client.query("ROLLBACK");
     throw e;
   } finally {
