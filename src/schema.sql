@@ -1,7 +1,3 @@
-CREATE DATABASE callwatch;
-CREATE USER ingest WITH ENCRYPTED PASSWORD 'xxx';
-GRANT ALL PRIVILEGES ON DATABASE callwatch TO ingest;
-
 CREATE TABLE IF NOT EXISTS calls (
     id SERIAL PRIMARY KEY,
     time timestamp with time zone NOT NULL,
@@ -13,11 +9,26 @@ CREATE TABLE IF NOT EXISTS calls (
     rssi text NOT NULL,
     loss_rate text NOT NULL,
     cbridge text NOT NULL,
-    UNIQUE (time, duration, dest_group)
+    UNIQUE (time, source_peer, source_radio, dest_group)
 );
 
-CREATE TABLE IF NOT EXISTS ingest (
+CREATE TABLE IF NOT EXISTS cw_ingest (
   id SERIAL PRIMARY KEY,
   time timestamp with time zone NOT NULL,
-  update_number integer NOT NULL
+  update_number integer NOT NULL,
+  cbridge text NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS dmrid_history (
+  id SERIAL PRIMARY KEY,
+  radio_id integer NOT NULL,
+  callsign varchar(16) NOT NULL,
+  name text,
+  surname text,
+  city text,
+  state text,
+  country text,
+  remarks text,
+  updated_ts timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (radio_id, callsign, name, surname, city, state, country, remarks)
 );
