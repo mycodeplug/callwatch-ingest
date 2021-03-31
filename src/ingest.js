@@ -13,9 +13,42 @@ const short_sleep = 5000;  // delay when seeing active calls
 
 const DB = new Pool();
 
+function dmrid(s) {
+  if (!s) {
+    return -1;
+  }
+  const id_match = s.match(/[0-9]{4,}/);
+  return id_match ? parseInt(id_match[0]) : -1;
+}
+
 class Call {
   constructor(
     id,
+    timestamp,
+    duration,
+    source_peer,
+    peer_id,
+    source_radio,
+    radio_id,
+    dest_group,
+    rssi,
+    site,
+    loss_rate
+  ) {
+    this.id = id;
+    this.timestamp = timestamp;
+    this.duration = duration;
+    this.source_peer = source_peer;
+    this.peer_id = peer_id;
+    this.source_radio = source_radio;
+    this.radio_id = radio_id;
+    this.dest_group = dest_group;
+    this.rssi = rssi;
+    this.site = site;
+    this.loss_rate = loss_rate;
+  }
+
+  static from_callwatch_row (
     time,
     duration,
     source_peer,
@@ -25,15 +58,19 @@ class Call {
     site,
     loss_rate
   ) {
-    this.id = id;
-    this.time = moment(time, "HH:mm:ss.S MMM DD", true).format();
-    this.duration = duration;
-    this.source_peer = source_peer;
-    this.source_radio = source_radio;
-    this.dest_group = dest_group;
-    this.rssi = rssi;
-    this.site = site;
-    this.loss_rate = loss_rate;
+    return new Call(
+      undefined,
+      moment(time, "HH:mm:ss.S MMM DD", true).format(),
+      duration,
+      source_peer,
+      dmrid(source_peer),
+      source_radio,
+      dmrid(source_radio),
+      dest_group,
+      parseFloat(rssi),
+      site,
+      parseFloat(loss_rate.replace("%", "")),
+    )
   }
 
   static from_text(tx) {
@@ -43,11 +80,11 @@ class Call {
     const active_calls = [];
     if (!active_raw.includes("&nbsp;\v \v")) {
       active_calls.push(
-        ...active_records.map((r) => new Call(undefined, ...r.split("\v")))
+        ...active_records.map((r) => this.from_callwatch_row(...r.split("\v")))
       );
     }
     const done_calls = done_records.map(
-      (r) => new Call(undefined, ...r.split("\v"))
+      (r) => this.from_callwatch_row(...r.split("\v"))
     );
     return [update_number, active_calls, done_calls];
   }
@@ -80,38 +117,45 @@ async function updateData(from_time, loop) {
     );
     // only request updates from the last successful ingest
     from_time = update_number;
-    const insert_query = `INSERT INTO calls (time, duration, source_peer,
-                                                 source_radio, dest_group, rssi,
-                                                 site, loss_rate, cbridge)
-                          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                          ON CONFLICT DO NOTHING`;
+    const insert_query =
+      `INSERT INTO calls
+         (time, duration,
+          source_peer, peer_id,
+          source_radio, radio_id,
+          dest_group,
+          rssi, site, loss_rate, cbridge)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       ON CONFLICT DO NOTHING`;
     done_calls.forEach((item) => {
-      DB.query(insert_query, [
-        item.time,
-        item.duration,
-        item.source_peer,
-        item.source_radio,
-        item.dest_group,
-        item.rssi,
-        item.site,
-        item.loss_rate,
-        cbridge,
-      ]).catch((e) => console.error(e.stack));
+      const params = [
+          item.timestamp,
+          item.duration,
+          item.source_peer,
+          item.peer_id,
+          item.source_radio,
+          item.radio_id,
+          item.dest_group,
+          item.rssi,
+          item.site,
+          item.loss_rate,
+          cbridge,
+      ];
+      DB.query(insert_query, params).catch((e) => console.error(e.stack, item, params));
     });
-    DB.query("INSERT INTO ingest (time, update_number) VALUES ($1, $2)", [
+    DB.query("INSERT INTO cw_ingest (time, update_number) VALUES ($1, $2)", [
       new Date(),
       update_number,
     ]).catch((e) => console.error(e.stack));
   }
   if (loop) {
-    const sleep_time = (active_calls.length > 0) ? short_sleep : long_sleep;
+    const sleep_time = (active_calls.length > 0 || done_calls.length > 0) ? short_sleep : long_sleep;
     setTimeout(() => updateData(from_time, loop), sleep_time);
   }
 }
 
 async function start() {
   const row = await DB.query(
-    "SELECT update_number FROM ingest ORDER BY time DESC LIMIT 1;"
+    "SELECT update_number FROM cw_ingest ORDER BY time DESC LIMIT 1;"
   );
   let update_number = undefined;
   if (row) {
