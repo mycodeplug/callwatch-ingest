@@ -3,8 +3,6 @@
     "cli-progress": "^3.9.0",
     "luxon": "^1.26.0",
     "pg": "^8.5.1",
-    "redis": "^3.0.2",
-    "sqlite3": "^5.0.0",
     "superagent": "^6.1.0"
   },
   "devDependencies": {
