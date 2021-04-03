@@ -34,16 +34,24 @@ docker run -it --network db -e PGHOST=db -e PGDATABASE=pnwho -e PGUSER=pnwho -e 
 
 ## userdb
 
-### showing changes in the history log
+### full history of changed ids
 
-Need to get this working
+This query fetches the full history of dmr numbers that have had
+modifications in the last day.
+
+It specifically excludes new DMR numbers.
+
 ```
- SELECT * FROM dmrid_history
- WHERE radio_id IN
- (
-   SELECT radio_id, MAX(updated_ts) as updated_ts FROM dmrid_history
-   WHERE updated_ts >= (NOW() - interval '2 day')
-   GROUP BY radio_id HAVING COUNT(*) > 1
+SELECT * FROM dmrid_history
+WHERE radio_id IN
+(
+  SELECT radio_id FROM dmrid_history
+  WHERE radio_id IN
+  (
+	  SELECT radio_id FROM dmrid_history
+	  GROUP BY radio_id
+      HAVING COUNT(*) > 1
+  ) AND updated_ts >= (NOW() - interval '1 day')
  )
- ORDER BY radio_id;
- ```
+ ORDER BY radio_id, id ASC;
+```
