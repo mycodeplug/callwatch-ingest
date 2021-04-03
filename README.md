@@ -12,6 +12,12 @@ docker run -it -v "$PWD":/app -w /app node:15-buster yarn install
 docker run -it --network db -e PGHOST=db -e PGDATABASE=pnwho -e PGUSER=pnwho -e PGPASSWORD=securesecure -v "$PWD":/app -w /app node:15-buster node src/ingest.js
 ```
 
+### dev server (restart on change)
+
+```
+docker run -it --network db -e PGHOST=db -e PGDATABASE=pnwho -e PGUSER=pnwho -e PGPASSWORD=securesecure -v "$PWD":/app -w /app node:15-buster npx nodemon src/ingest.js
+```
+
 ## cronjob to update the usersdb
 
 TODO
