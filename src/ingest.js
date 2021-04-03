@@ -1,12 +1,12 @@
 // ingest.js - get data from callwatch into sqlite, etc
 const http = require("http");
-const moment = require("moment-timezone");
+const { DateTime } = require('luxon');
 const { Pool, Client } = require("pg");
 const superagent = require("superagent");
 const util = require("util");
 
 const cbridge = "pnw-d.pnwdigital.net";
-moment.tz.setDefault("America/Los_Angeles");
+const cbridge_tz = "America/Los_Angeles";
 
 const long_sleep = 30000;  // delay when no calls are active
 const short_sleep = 5000;  // delay when seeing active calls
@@ -60,7 +60,7 @@ class Call {
   ) {
     return new Call(
       undefined,
-      moment(time, "HH:mm:ss.S MMM DD", true).format(),
+      DateTime.fromFormat(time, "HH:mm:ss.u MMM d", {"zone": cbridge_tz}).toISO(),
       duration,
       source_peer,
       dmrid(source_peer),
@@ -101,7 +101,7 @@ async function updateData(from_time, loop) {
   if (from_time) {
     query["updateNumber"] = from_time;
   }
-  console.log(`[${moment().format()}] Querying ${url} with ${util.inspect(query)}`);
+  console.log(`[${DateTime.now().setZone(cbridge_tz).toISO()}] Querying ${url} with ${util.inspect(query)}`);
   const resp = await superagent.get(url).query(query);
   const [update_number, active_calls, done_calls] = Call.from_text(resp.text);
   g_active_calls = active_calls;
