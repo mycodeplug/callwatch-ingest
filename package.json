@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "cli-progress": "^3.9.0",
+    "express": "^4.17.1",
     "luxon": "^1.26.0",
     "pg": "^8.5.1",
     "superagent": "^6.1.0"
