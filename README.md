@@ -24,3 +24,20 @@ docker run -it --network db -e PGHOST=db -e PGDATABASE=pnwho -e PGUSER=pnwho -e 
 ```
 docker run -it --network db -e PGHOST=db -e PGDATABASE=pnwho -e PGUSER=pnwho -e PGPASSWORD=securesecure -v "$PWD":/app -w /app node:15-buster /bin/bash
 ```
+# queries
+
+## userdb
+
+### showing changes in the history log
+
+Need to get this working
+```
+ SELECT * FROM dmrid_history
+ WHERE radio_id IN
+ (
+   SELECT radio_id, MAX(updated_ts) as updated_ts FROM dmrid_history
+   WHERE updated_ts >= (NOW() - interval '2 day')
+   GROUP BY radio_id HAVING COUNT(*) > 1
+ )
+ ORDER BY radio_id;
+ ```
