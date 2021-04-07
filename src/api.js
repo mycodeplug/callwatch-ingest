@@ -28,7 +28,7 @@ app.get('/', (req, res) => {
 app.get('/pnwusers', async (req, res) => {
     const client = await pool.connect();
     const result = await client.query(
-        "SELECT radio_id, callsign, name, state, country, last_heard " +
+        "SELECT radio_id, callsign, name, city, state, country, last_heard " +
         "FROM pnwusers " +
         "ORDER BY last_heard DESC"
     )
