@@ -1,7 +1,9 @@
 const express = require('express')
+const cors = require("cors");
 const { Pool } = require("pg");
-const app = express()
-const port = 3333
+const app = express();
+app.use(cors());
+const port = 3333;
 const pool = new Pool();
 
 function createError(status, message) {
