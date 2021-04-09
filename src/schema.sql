@@ -1,3 +1,40 @@
+CREATE OR REPLACE FUNCTION talkgroup_from(dest_group text) RETURNS text
+LANGUAGE plpgsql
+IMMUTABLE RETURNS NULL ON NULL INPUT
+PARALLEL SAFE AS
+$$
+BEGIN
+    RETURN (
+        REPLACE(
+        REPLACE(
+        REPLACE(
+        REPLACE(
+        REPLACE(
+        REPLACE(
+        REPLACE(
+        REPLACE(
+        REPLACE(
+        REPLACE(
+        REPLACE(
+        REPLACE(
+            REGEXP_REPLACE(dest_group, '(~2)?(-[0-9]+|\.CC(\..*)?)$', '', 'i'),
+            'Audio Test 2', 'Audio Test'
+        ), 'BC 1', 'BC'
+        ), 'Bridge 2', 'Bridge'
+        ), 'California 1', 'California'
+        ), 'Cascades 1', 'Cascades'
+        ), 'I.84', 'I-84 2'
+        ), 'Idaho 1', 'Idaho'
+        ), 'Inland 1', 'Inland'
+        ), 'Oregon 1', 'Oregon'
+        ), 'PNWR 2', 'PNWR'
+        ), 'Parrot 1', 'Parrot'
+        ), 'SoCal 2', 'SoCal'
+        )
+    );
+END
+$$;
+
 CREATE TABLE IF NOT EXISTS calls (
     id SERIAL PRIMARY KEY,
     time timestamp with time zone NOT NULL,
@@ -7,6 +44,7 @@ CREATE TABLE IF NOT EXISTS calls (
     source_radio text NOT NULL,
     radio_id integer NOT NULL DEFAULT -1,
     dest_group text NOT NULL,
+    talkgroup text GENERATED ALWAYS AS (talkgroup_from(dest_group)) STORED,
     site text NOT NULL,
     rssi numeric NOT NULL DEFAULT 0.0,
     loss_rate numeric NOT NULL DEFAULT 0.0,
@@ -18,6 +56,7 @@ CREATE INDEX calls_radio_id ON calls (radio_id);
 CREATE INDEX calls_peer_id ON calls (peer_id);
 CREATE INDEX calls_cbridge ON calls (cbridge);
 CREATE INDEX calls_dest_group ON calls (dest_group);
+CREATE INDEX calls_talkgroup ON calls (talkgroup);
 
 CREATE TABLE IF NOT EXISTS cw_ingest (
   id SERIAL PRIMARY KEY,
