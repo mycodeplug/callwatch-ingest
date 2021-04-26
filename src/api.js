@@ -52,16 +52,28 @@ app.get('/pnwtalkgroups', async (req, res) => {
     res.send(result.rows);
 })
 
-app.get('/calls_by_talkgroup/:talkgroup', async (req, res) => {
+app.get('/calls', async (req, res) => {
     const client = await pool.connect();
     const default_since = "2 day";
     const since = req.query ? (req.query.since ? req.query.since : default_since) : default_since;
     const result = await client.query(`
         SELECT time, duration, source_peer, talkgroup, calls.radio_id
         FROM calls
-        JOIN users ON users.radio_id = calls.radio_id
+        WHERE time > NOW() - $1::interval
+        ORDER BY time ASC 
+    `, [since]);
+    res.send(result.rows);
+})
+
+app.get('/calls/:talkgroup', async (req, res) => {
+    const client = await pool.connect();
+    const default_since = "2 day";
+    const since = req.query ? (req.query.since ? req.query.since : default_since) : default_since;
+    const result = await client.query(`
+        SELECT time, duration, source_peer, talkgroup, calls.radio_id
+        FROM calls
         WHERE LOWER(talkgroup) = LOWER($1) AND time > NOW() - $2::interval
-        ORDER BY time DESC
+        ORDER BY time ASC 
     `, [req.params.talkgroup, since]);
     res.send(result.rows);
 })
