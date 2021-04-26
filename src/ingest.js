@@ -12,6 +12,9 @@ const long_sleep = 30000;  // delay when no calls are active
 const short_sleep = 5000;  // delay when seeing active calls
 
 const DB = new Pool();
+DB.on('error', (err) => {
+  console.log("db Pool error", err);
+});
 
 function dmrid(s) {
   if (!s) {

@@ -5,6 +5,9 @@ const app = express();
 app.use(cors());
 const port = 3333;
 const pool = new Pool();
+pool.on('error', (err) => {
+    console.log("db Pool error", err);
+});
 
 function createError(status, message) {
     var err = new Error(message);
