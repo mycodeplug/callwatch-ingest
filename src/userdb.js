@@ -7,7 +7,7 @@ const fs = require('fs')
 
 const pool = new Pool();
 const default_radioid_users_json =
-  "https://database.radioid.net/static/users.json";
+  "https://www.radioid.net/static/users.json";
 const local_json = "./users.json";
 
 async function download_users_json(url) {
