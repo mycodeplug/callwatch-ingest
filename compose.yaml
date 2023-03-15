@@ -1,0 +1,13 @@
+services:
+  ingest: &build-with-db-env
+    build: .
+    environment:
+      - PGHOST
+      - PGUSER
+      - PGPASSWORD
+    command: src/ingest.js
+  api:
+    <<: *build-with-db-env
+    ports:
+      - 3333:3333
+    command: src/api.js

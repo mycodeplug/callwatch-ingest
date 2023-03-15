@@ -1,0 +1,23 @@
+services:
+  ingest:
+    depends_on:
+      - db
+  api:
+    depends_on:
+      - db
+  db:
+    build:
+      context: .
+      dockerfile: Db.Dockerfile
+    environment:
+      - POSTGRES_USER=$PGUSER
+      - POSTGRES_PASSWORD=$PGPASSWORD
+    volumes:
+      - pnwho-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "pnwho"]
+      interval: 10s
+      start_period: 30s
+    restart: unless-stopped
+volumes:
+  pnwho-db:
