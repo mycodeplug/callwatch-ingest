@@ -5,7 +5,7 @@ const { Pool, Client } = require("pg");
 const superagent = require("superagent");
 const util = require("util");
 
-const cbridge = "pnw-d.pnwdigital.net";
+const cbridge = "pnw-a.pnwdigital.net";
 const cbridge_tz = "America/Los_Angeles";
 
 const long_sleep = 30000;  // delay when no calls are active

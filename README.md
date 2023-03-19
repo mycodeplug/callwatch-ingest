@@ -26,9 +26,8 @@ docker run -it --network db -e PGHOST=db -e PGDATABASE=pnwho -e PGUSER=pnwho -e 
 
 ## cronjob to update the usersdb
 
-TODO
 ```
-docker run -it --network db -e PGHOST=db -e PGDATABASE=pnwho -e PGUSER=pnwho -e PGPASSWORD=securesecure -v "$PWD":/app -w /app node:15-buster node src/userdb.js
+docker compose run ingest -- src/userdb.js
 ```
 
 ## dev container

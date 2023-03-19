@@ -6,6 +6,7 @@ services:
       - PGUSER
       - PGPASSWORD
     command: src/ingest.js
+    restart: unless-stopped
   api:
     <<: *build-with-db-env
     ports:
