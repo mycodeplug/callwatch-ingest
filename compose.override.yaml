@@ -3,6 +3,9 @@ x-db-template: &db-template
     context: .
     dockerfile: Db.Dockerfile
   environment:
+    - PGHOST
+    - PGUSER
+    - PGPASSWORD
     - POSTGRES_USER=$PGUSER
     - POSTGRES_PASSWORD=$PGPASSWORD
 services:
