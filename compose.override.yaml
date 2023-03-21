@@ -1,3 +1,10 @@
+x-db-template: &db-template
+  build:
+    context: .
+    dockerfile: Db.Dockerfile
+  environment:
+    - POSTGRES_USER=$PGUSER
+    - POSTGRES_PASSWORD=$PGPASSWORD
 services:
   ingest:
     depends_on:
@@ -5,13 +12,15 @@ services:
   api:
     depends_on:
       - db
+  psql:
+    <<: *db-template
+    depends_on:
+      - db
+    entrypoint: psql
+    command: --version
+    restart: "no"
   db:
-    build:
-      context: .
-      dockerfile: Db.Dockerfile
-    environment:
-      - POSTGRES_USER=$PGUSER
-      - POSTGRES_PASSWORD=$PGPASSWORD
+    <<: *db-template
     volumes:
       - pnwho-db:/var/lib/postgresql/data
     healthcheck:
