@@ -1,6 +1,6 @@
 // ingest.js - get data from callwatch into sqlite, etc
 const http = require("http");
-const { DateTime } = require('luxon');
+const { DateTime } = require("luxon");
 const { Pool, Client } = require("pg");
 const superagent = require("superagent");
 const util = require("util");
@@ -8,11 +8,11 @@ const util = require("util");
 const cbridge = "pnw-a.pnwdigital.net";
 const cbridge_tz = "America/Los_Angeles";
 
-const long_sleep = 30000;  // delay when no calls are active
-const short_sleep = 5000;  // delay when seeing active calls
+const long_sleep = 30000; // delay when no calls are active
+const short_sleep = 5000; // delay when seeing active calls
 
 const DB = new Pool();
-DB.on('error', (err) => {
+DB.on("error", (err) => {
   console.log("db Pool error", err);
 });
 
@@ -51,7 +51,7 @@ class Call {
     this.loss_rate = loss_rate;
   }
 
-  static from_callwatch_row (
+  static from_callwatch_row(
     time,
     duration,
     source_peer,
@@ -63,7 +63,9 @@ class Call {
   ) {
     return new Call(
       undefined,
-      DateTime.fromFormat(time, "HH:mm:ss.u MMM d", {"zone": cbridge_tz}).toISO(),
+      DateTime.fromFormat(time, "HH:mm:ss.u MMM d", {
+        zone: cbridge_tz,
+      }).toISO(),
       duration,
       source_peer,
       dmrid(source_peer),
@@ -72,8 +74,8 @@ class Call {
       dest_group,
       parseFloat(rssi),
       site,
-      parseFloat(loss_rate.replace("%", "")),
-    )
+      parseFloat(loss_rate.replace("%", ""))
+    );
   }
 
   static from_text(tx) {
@@ -86,8 +88,8 @@ class Call {
         ...active_records.map((r) => this.from_callwatch_row(...r.split("\v")))
       );
     }
-    const done_calls = done_records.map(
-      (r) => this.from_callwatch_row(...r.split("\v"))
+    const done_calls = done_records.map((r) =>
+      this.from_callwatch_row(...r.split("\v"))
     );
     return [update_number, active_calls, done_calls];
   }
@@ -96,16 +98,7 @@ class Call {
 let g_active_calls = [];
 let g_done_calls = [];
 
-async function updateData(from_time, loop) {
-  url = `http://${cbridge}:42420/data.txt`;
-  const query = {
-    param: "ajaxcallwatch",
-  };
-  if (from_time) {
-    query["updateNumber"] = from_time;
-  }
-  console.log(`[${DateTime.now().setZone(cbridge_tz).toISO()}] Querying ${url} with ${util.inspect(query)}`);
-  const resp = await superagent.get(url).query(query);
+async function processResp(resp) {
   const [update_number, active_calls, done_calls] = Call.from_text(resp.text);
   g_active_calls = active_calls;
   g_done_calls.unshift(...done_calls);
@@ -119,9 +112,7 @@ async function updateData(from_time, loop) {
       `New Calls (${done_calls.length})\n${util.inspect(done_calls)}`
     );
     // only request updates from the last successful ingest
-    from_time = update_number;
-    const insert_query =
-      `INSERT INTO calls
+    const insert_query = `INSERT INTO calls
          (time, duration,
           source_peer, peer_id,
           source_radio, radio_id,
@@ -131,27 +122,55 @@ async function updateData(from_time, loop) {
        ON CONFLICT DO NOTHING`;
     done_calls.forEach((item) => {
       const params = [
-          item.timestamp,
-          item.duration,
-          item.source_peer,
-          item.peer_id,
-          item.source_radio,
-          item.radio_id,
-          item.dest_group,
-          item.rssi,
-          item.site,
-          item.loss_rate,
-          cbridge,
+        item.timestamp,
+        item.duration,
+        item.source_peer,
+        item.peer_id,
+        item.source_radio,
+        item.radio_id,
+        item.dest_group,
+        item.rssi,
+        item.site,
+        item.loss_rate,
+        cbridge,
       ];
-      DB.query(insert_query, params).catch((e) => console.error(e.stack, item, params));
+      DB.query(insert_query, params);
     });
     DB.query("INSERT INTO cw_ingest (time, update_number) VALUES ($1, $2)", [
       new Date(),
       update_number,
-    ]).catch((e) => console.error(e.stack));
+    ]);
+  }
+  return [update_number, active_calls.length, done_calls.length];
+}
+
+async function updateData(from_time, loop) {
+  let sleep_time = long_sleep;
+  const url = `http://${cbridge}:42420/data.txt`;
+  const query = {
+    param: "ajaxcallwatch",
+  };
+  if (from_time) {
+    query["updateNumber"] = from_time;
+  }
+  console.log(
+    `[${DateTime.now()
+      .setZone(cbridge_tz)
+      .toISO()}] Querying ${url} with ${util.inspect(query)}`
+  );
+
+  try {
+    const resp = await superagent.get(url).query(query);
+    const [update_number, active_calls_length, done_calls_length] =
+      await processResp(resp);
+    from_time = update_number;
+    if (active_calls_length > 0 || done_calls_length > 0) {
+      sleep_time = short_sleep;
+    }
+  } catch (e) {
+    console.error(e.stack);
   }
   if (loop) {
-    const sleep_time = (active_calls.length > 0 || done_calls.length > 0) ? short_sleep : long_sleep;
     setTimeout(() => updateData(from_time, loop), sleep_time);
   }
 }
